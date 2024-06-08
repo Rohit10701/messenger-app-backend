@@ -22,6 +22,8 @@ const connectRedis = async () => {
   }
 };
 
+
+
 app.get('/', (req, res) => {
   res.send('<h1>Hello world</h1>');
 });
@@ -32,7 +34,17 @@ const kafka = new Kafka({
 });
 
 const consumer = kafka.consumer({ groupId: 'message-consumers' });
+const fetchValue = async () => {
+  // Start the Redis connection
+const redisClient = await connectRedis().catch(err => {
+  console.error('Error starting Redis connection', err);
+  process.exit(1); // Exit with error status if Redis connection fails
+});
 
+  const value = await redisClient.get('19BEE0036');
+  console.log("19BEE0036 this is the value : ", value)
+}
+fetchValue()
 const connectConsumer = async () => {
   try {
     await consumer.connect();
@@ -44,8 +56,10 @@ const connectConsumer = async () => {
         const messageContent = JSON.parse(message.value.toString());
         console.log(`Received message from topic ${topic}:`, messageContent);
         const { senderId, receiverId, message: msg } = messageContent;
+
+        // need to check if the reciever is online or not ? could be done by looking into redis
+        //if not online just save it into db else emit the message
         socket.emit('messageToRoom', { msg, receiverId, senderId });
-        console.log(socket, messageContent)
       },
     });
   } catch (err) {
@@ -79,8 +93,3 @@ process.on('SIGINT', async () => {
   }
 });
 
-// Start the Redis connection
-connectRedis().catch(err => {
-  console.error('Error starting Redis connection', err);
-  process.exit(1); // Exit with error status if Redis connection fails
-});

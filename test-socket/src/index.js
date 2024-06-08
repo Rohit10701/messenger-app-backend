@@ -2,14 +2,25 @@ import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import { Kafka } from 'kafkajs';
+import { createClient } from 'redis';
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+const client = await createClient({
+  url : 'redis://localhost:6379'
+})
+  .on('error', err => console.log('Redis Client Error', err))
+  .connect();
+
+const serverInstanceId = 1
+
 
 app.get('/', (req, res) => {
   res.send('<h1>Hello world</h1>');
 });
+
+
 
 const kafka = new Kafka({
 	clientId: 'messaging-app',
@@ -51,12 +62,11 @@ const sendMessageToKafkaQueue = async (payload) => {
   }
 };
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   console.log('A user connected', socket.handshake.query);
 
   socket.on('message', async (mEvent) => {
     console.log('Message event', mEvent);
-    console.log(socket.rooms);
 
     const { message, senderId, receiverId, messageId } = mEvent;
     await sendMessageToKafkaQueue({
@@ -68,6 +78,18 @@ io.on('connection', (socket) => {
     });
     // Optionally emit the message to the receiver
     // socket.to(receiverId).emit('message', { message, senderId });
+    //  console.log("socket sent!!!")
+    
+  });
+
+  socket.on('messageToRoom', async (mEvent) => {
+    console.log('Message event', mEvent);
+
+    const { msg, receiverId, senderId } = mEvent;
+    // Optionally emit the message to the receiver
+    socket.to(receiverId).emit('message', { msg, senderId });
+     console.log("socket sent!!!")
+    
   });
 
   socket.on('disconnect', () => {
@@ -76,6 +98,13 @@ io.on('connection', (socket) => {
 
   const userId = socket.handshake.query.uid;
   socket.join(userId);
+  const socketId = socket.id
+  // not saving socketId cause roomId = userId for a specific port
+  if(userId && serverInstanceId){
+    await client.set(userId, JSON.stringify({  serverInstanceId }));
+    console.log(userId, serverInstanceId)
+  }
+  console.log(socket.rooms);
 });
 
 server.listen(3000, () => {
