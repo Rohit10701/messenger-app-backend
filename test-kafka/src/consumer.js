@@ -68,7 +68,7 @@ const processMessage = async ({ topic, partition, message }) => {
     `message:${messageId}`,
     JSON.stringify(completeMessage),
     'EX',
-    960 // Expire in 15 minutes
+    960
   );
 };
 

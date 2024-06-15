@@ -76,7 +76,6 @@ io.on('connection', async (socket) => {
       messageId,
       timestamp: new Date().toISOString(),
     });
-    // Optionally emit the message to the receiver
     // socket.to(receiverId).emit('message', { message, senderId });
     //  console.log("socket sent!!!")
     
@@ -86,7 +85,6 @@ io.on('connection', async (socket) => {
     console.log('Message event Room', mEvent);
 
     const { msg, receiverId, senderId } = mEvent;
-    // Optionally emit the message to the receiver
     socket.to(receiverId).emit('message', mEvent);
      console.log("socket sent!!!")
     
