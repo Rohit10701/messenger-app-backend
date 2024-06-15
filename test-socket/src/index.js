@@ -24,7 +24,7 @@ app.get('/', (req, res) => {
 
 const kafka = new Kafka({
 	clientId: 'messaging-app',
-	brokers: ['localhost:9092', 'localhost:9093'],
+	brokers: ['localhost:9092'],
   });
 const producer = kafka.producer();
 
@@ -83,11 +83,11 @@ io.on('connection', async (socket) => {
   });
 
   socket.on('messageToRoom', async (mEvent) => {
-    console.log('Message event', mEvent);
+    console.log('Message event Room', mEvent);
 
     const { msg, receiverId, senderId } = mEvent;
     // Optionally emit the message to the receiver
-    socket.to(receiverId).emit('message', { msg, senderId });
+    socket.to(receiverId).emit('message', mEvent);
      console.log("socket sent!!!")
     
   });
